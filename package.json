@@ -14,5 +14,7 @@
 	"devDependencies": {
 		"babel-cli": "^6.26.0"
 	},
-	"dependencies": {}
+	"dependencies": {
+		"fs-extra": "^5.0.0"
+	}
 }

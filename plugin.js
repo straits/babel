@@ -172,7 +172,6 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 							{
 								const symbolParent = symbolPath.node;
 								assert( symbolParent.type === 'MemberExpression' );
-								assert( symbolParent.computed === false );
 								assert( symbolParent.object === parentPath.node );
 							}
 
@@ -185,16 +184,15 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 							}
 							*/
 
-							const prop = symbolPath.node.property;
-
 							// fixing the cases where the original code was not `(...).*${symbol}`, but something else, like `.*(x.y)`
-							if( prop.type !== 'Identifier' ) {
-								TODO();
+							if( symbolPath.node.computed ) {
+								parentPath.replaceWith( parentPath.node.object );
 								return;
 							}
 
 							// generating a new unique identifier for the symbol, and replacing the current symbol id with it:
 							// from `(...).${symbolName}` to `(...)[${newSymbolName}]`
+							const prop = symbolPath.node.property;
 							const newSymbolIdentifier = protocolNS.provideSymbol( prop.name );
 							symbolPath.replaceWith(
 								t.memberExpression(

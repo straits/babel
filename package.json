@@ -4,16 +4,17 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "mocha test/index.js"
 	},
 	"author": "peoro",
 	"license": "ISC",
 	"devDependencies": {
-		"babel-cli": "^6.26.0"
+		"chai": "^4.1.2",
+		"mocha": "^5.1.1"
 	},
 	"dependencies": {
+		"babel-cli": "^6.26.0",
 		"babel-generator": "^6.26.1",
-		"babel-template": "^6.26.0",
-		"fs-extra": "^5.0.0"
+		"babel-template": "^6.26.0"
 	}
 }

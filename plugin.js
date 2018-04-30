@@ -1,4 +1,6 @@
 
+'use strict';
+
 const assert = require('assert');
 
 const babylon = require('babylon');
@@ -33,6 +35,10 @@ class ProtocolNamespace {
 
 	addProvider( path ) {
 		this.providers.add( path );
+
+		if( ! path.node.body.expression ) {
+			throw path.buildCodeFrameError(`"use protocols from" requires an expression.`);
+		}
 	}
 
 	provideSymbol( symName ) {
@@ -74,6 +80,17 @@ class ProtocolNamespace {
 	}
 }
 
+function finalCheck( path ) {
+	// making sure that no `_jsProtocol` was left unresolved
+	path.traverse({
+		Identifier( path ) {
+			if( path.node.name === `_jsProtocol` ) {
+				throw path.buildCodeFrameError(`.* used, without using any protocols.`);
+			}
+		}
+	});
+}
+
 module.exports = function( arg ) {
 	return {
 		visitor: {
@@ -92,6 +109,7 @@ module.exports = function( arg ) {
 						assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use protocols from" must be placed in a block, or in the outermost scope.` );
 
 						const protocolNS = defaultGet.call( protocolNamespaces, path.parentPath, ()=>new ProtocolNamespace(path) );
+						protocolNS.addProvider( path );
 					}
 				});
 
@@ -99,6 +117,7 @@ module.exports = function( arg ) {
 				// if we didn't find any `use protocols of` statements, we can return
 				// TODO: actually, we should fix `.*` anyways, but I'll code that that another day :P
 				if( protocolNamespaces.size === 0 ) {
+					finalCheck( path ); // making sure that everythign is fine
 					return;
 				}
 
@@ -211,6 +230,48 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 				for( const protocolNS of protocolNamespaces.values() ) {
 					protocolNS.remove();
 				}
+
+				// turning `_jsProtocol` within strings into `.*`
+				// NOTE: if a string had `_jsProtocol` originally, that'd be screwed up, escape those, maybe?
+				function cleanString( str ) {
+					return str
+						.replace(/\._jsProtocol\.?/g, `.*` )
+						.replace(/_jsProtocolProvider:/g,  `use protocols from` );
+				}
+				path.traverse({
+					StringLiteral( literalPath ) {
+						const str = literalPath.node.value;
+						const newStr = cleanString( str );
+						if( newStr === str ) {
+							return;
+						}
+
+						literalPath.replaceWith(
+							t.stringLiteral(
+								newStr
+							)
+						);
+					},
+					TemplateElement( elementPath ) {
+						const {value, tail} = elementPath.node;
+						const newValue = {
+							raw: cleanString( value.raw ),
+							cooked: cleanString( value.cooked ),
+						};
+						if( newValue.raw === value.raw || newValue.cooked === value.cooked ) {
+							return;
+						}
+
+						elementPath.replaceWith(
+							t.templateElement(
+								newValue,
+								tail
+							)
+						);
+					},
+				});
+
+				finalCheck( path ); // making sure that everythign is fine
 			}
 		}
 	};

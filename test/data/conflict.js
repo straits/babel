@@ -6,8 +6,8 @@ const symbolsB = {
 	x: Symbol(`x`)
 };
 
-use protocols from symbolsA;
-use protocols from symbolsB;
+use traits * from symbolsA;
+use traits * from symbolsB;
 
 main( ()=>{
 	const obj = {};

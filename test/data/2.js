@@ -4,7 +4,7 @@ const symbols = {
 	two: Symbol(`two`),
 };
 
-use protocols from symbols;
+use traits * from symbols;
 
 class C {}
 C.prototype.*two = ()=>2;

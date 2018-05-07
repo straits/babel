@@ -1,12 +1,13 @@
 {
-	"name": "js-protocols-babylon",
-	"version": "1.0.0",
-	"description": "",
+	"name": "straits-babel",
+	"version": "0.1.0",
+	"description": "Babel straits syntax plugin",
 	"main": "index.js",
 	"scripts": {
 		"test": "mocha test/index.js"
 	},
 	"author": "peoro",
+	"homepage": "https://straits.paologiangrandi.it",
 	"license": "ISC",
 	"devDependencies": {
 		"chai": "^4.1.2",

@@ -56,17 +56,18 @@ const parseTests = [
 	parseTest(`a.*()`,	/Unexpected token/,		),
 	parseTest(`a.*(b)`,	/Unexpected token/,		),
 	parseTest(`.*b`,	/Unexpected token/,		),
-	parseTest(`a.*b`,	null,	/\.\* used, without using any protocols\./	),
-	parseTest(`use protocols;`,	/Unexpected token/,		),
-	parseTest(`use protocols from;`,	null,	/"use protocols from" requires an expression./	),
-	parseTest(`use something from {};`,	/Unexpected token/,		),
-	parseTest(`use protocols from {};`,	null,	/"use protocols from" requires an expression./	),
-	parseTest(`use protocols from ({});`,			),
-	parseTest(`use protocols from ({}); a.*b`,			),
+	parseTest(`a.*b`,	null,	/\.\* used, without using any traits\./	),
+	parseTest(`use traits from ({});`,	/Unexpected token/,		),
+	parseTest(`use traits *;`,	/Unexpected token/,		),
+	parseTest(`use traits * from;`,	null,	/"use traits \* from" requires an expression./	),
+	parseTest(`use something * from ({});`,	/Unexpected token/,		),
+	parseTest(`use traits * from {};`,	null,	/"use traits \* from" requires an expression./	),
+	parseTest(`use traits * from ({});`,			),
+	parseTest(`use traits * from ({}); a.*b`,			),
 	parseTest(`a.*[b]`,			),
 ];
 
-describe(`js-protocols-babylon`, function(){
+describe(`straits-babel`, function(){
 	it(`Parses correctly`, function(){
 		parseTests.forEach( ({code, thrownByParse})=>{
 			if( thrownByParse ) {
@@ -78,7 +79,7 @@ describe(`js-protocols-babylon`, function(){
 	});
 });
 
-describe(`js-protocols-babylon/plugin`, function(){
+describe(`straits-babel/plugin`, function(){
 	it(`Parses correctly`, function(){
 		parseTests.forEach( ({code, thrownByTransform})=>{
 			if( thrownByTransform ) {
@@ -94,7 +95,11 @@ describe(`js-protocols-babylon/plugin`, function(){
 		expect( evalFile(`./test/data/2.js`) ).to.equal( 2 );
 		expect( evalFile(`./test/data/3.js`) ).to.equal( 3 );
 		expect( ()=>evalFile(`./test/data/conflict.js`) ).to.throw(/Symbol x offered by multiple symbol sets./);
-		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used, without using any protocols./);
+		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used, without using any traits./);
 		expect( ()=>evalFile(`./test/data/missing_symbol.js`) ).to.throw(/No symbol set is providing symbol x/);
+	});
+
+	it(`Works with Symbol`, function(){
+		expect( ()=>evalFile(`./test/data/symbol.js`) ).not.to.throw();
 	});
 });

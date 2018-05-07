@@ -8,8 +8,8 @@ module.exports = Object.assign({}, babylon, {
 		code = code
 			.replace(/(\d+)\.\*/g, (match, num)=>`(${num}).*` )
 			.replace(/\.\*\[/g, `[` )
-			.replace(/\.\*/g, `._jsProtocol.` )
-			.replace(/use\s+protocols\s+from/mg, `_jsProtocolProvider:` );
+			.replace(/\.\*/g, `._Straits.` )
+			.replace(/use\s+traits\s+\*\s+from/mg, `_StraitsProvider:` );
 
 		return babylon.parse( code, options );
 	}

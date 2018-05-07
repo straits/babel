@@ -9,9 +9,9 @@ const symbolsV = {
 	value: Symbol(`value`),
 };
 
-use protocols from symbols1;
-use protocols from symbols2;
-use protocols from symbolsV;
+use traits * from symbols1;
+use traits * from symbols2;
+use traits * from symbolsV;
 
 class One {}
 One.prototype.*one = ()=>1;

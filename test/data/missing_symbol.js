@@ -2,7 +2,7 @@
 const symbols = {
 };
 
-use protocols from symbols;
+use traits * from symbols;
 
 main( ()=>{
 	const obj = {};

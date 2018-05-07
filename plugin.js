@@ -19,11 +19,11 @@ function defaultGet( key, defaultConstructor ) {
 }
 
 // a namespace where we're gonna look for symbols
-// it must be composed by at least one expression used in a `use protocols from` statement.
-class ProtocolNamespace {
+// it must be composed by at least one expression used in a `use traits * from` statement.
+class TraitNamespace {
 	constructor( path ) {
 		assert( path.node.type === 'LabeledStatement' );
-		assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use protocols from" must be placed in a block, or in the outermost scope.` );
+		assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
 
 		this.path = path;
 		this.blockPath = path.parentPath;
@@ -37,7 +37,7 @@ class ProtocolNamespace {
 		this.providers.add( path );
 
 		if( ! path.node.body.expression ) {
-			throw path.buildCodeFrameError(`"use protocols from" requires an expression.`);
+			throw path.buildCodeFrameError(`"use traits * from" requires an expression.`);
 		}
 	}
 
@@ -81,11 +81,11 @@ class ProtocolNamespace {
 }
 
 function finalCheck( path ) {
-	// making sure that no `_jsProtocol` was left unresolved
+	// making sure that no `_Straits` was left unresolved
 	path.traverse({
 		Identifier( path ) {
-			if( path.node.name === `_jsProtocol` ) {
-				throw path.buildCodeFrameError(`.* used, without using any protocols.`);
+			if( path.node.name === `_Straits` ) {
+				throw path.buildCodeFrameError(`.* used, without using any traits.`);
 			}
 		}
 	});
@@ -95,44 +95,42 @@ module.exports = function( arg ) {
 	return {
 		visitor: {
 			Program( path, state ) {
-				const protocolNamespaces = new Map();
+				const traitNamespaces = new Map();
 				const getSymbolIdentifier = path.scope.generateUidIdentifier(`getSymbol`);
 
-				// 1. marking all the blocks that contain a `_jsProtocolProvider` expression, and removing those.
+				// 1. marking all the blocks that contain a `_StraitsProvider` expression, and removing those.
 				path.traverse({
 					LabeledStatement( path ) {
 						const node = path.node;
-						if( node.label.name !== '_jsProtocolProvider' ) {
+						if( node.label.name !== '_StraitsProvider' ) {
 							return;
 						}
 
-						assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use protocols from" must be placed in a block, or in the outermost scope.` );
+						assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
 
-						const protocolNS = defaultGet.call( protocolNamespaces, path.parentPath, ()=>new ProtocolNamespace(path) );
-						protocolNS.addProvider( path );
+						const traitNS = defaultGet.call( traitNamespaces, path.parentPath, ()=>new TraitNamespace(path) );
+						traitNS.addProvider( path );
 					}
 				});
 
 
-				// if we didn't find any `use protocols of` statements, we can return
+				// if we didn't find any `use traits * from` statements, we can return
 				// TODO: actually, we should fix `.*` anyways, but I'll code that that another day :P
-				if( protocolNamespaces.size === 0 ) {
+				if( traitNamespaces.size === 0 ) {
 					finalCheck( path ); // making sure that everythign is fine
 					return;
 				}
 
-				// if we found at least one `use protocols of` statement, let's generate the `getSymbol` function
+				// if we found at least one `use traits * from` statement, let's generate the `getSymbol` function
 				const getSymbolBuilder = template(`
 function GET_SYMBOL( targetSymName, ...symbolSets ) {
 	let symbol;
 	symbolSets.forEach( symbolSet=>{
-		for( let symName in symbolSet ) {
-			if( symName === targetSymName ) {
-				if( !! symbol ) {
-					throw new Error(\`Symbol \${targetSymName} offered by multiple symbol sets.\`);
-				}
-				symbol = symbolSet[targetSymName];
+		if( typeof symbolSet[targetSymName] === 'symbol' ) {
+			if( !! symbol ) {
+				throw new Error(\`Symbol \${targetSymName} offered by multiple symbol sets.\`);
 			}
+			symbol = symbolSet[targetSymName];
 		}
 	});
 	if( ! symbol ) {
@@ -144,13 +142,13 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 
 				path.unshiftContainer('body', getSymbolBuilder({ GET_SYMBOL:getSymbolIdentifier }) );
 
-				// 2. for each `use protocols from ...` expression we found, let's iterate backwards: if we see that some other `use protocols from ...` was defined in a higher scope, let's apply that expression here as well
-				for( const [blockPath, protocolNS] of protocolNamespaces ) {
+				// 2. for each `use traits * from ...` expression we found, let's iterate backwards: if we see that some other `use traits * from ...` was defined in a higher scope, let's apply that expression here as well
+				for( const [blockPath, traitNS] of traitNamespaces ) {
 					let parentPath = blockPath.parentPath;
 					while( parentPath ) {
-						if( protocolNamespaces.has(parentPath) ) {
-							protocolNamespaces.get(parentPath).providers.forEach( p=>{
-								protocolNS.addProvider( p );
+						if( traitNamespaces.has(parentPath) ) {
+							traitNamespaces.get(parentPath).providers.forEach( p=>{
+								traitNS.addProvider( p );
 							});
 						}
 
@@ -158,22 +156,22 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 					}
 				}
 
-				// 3. for each `use protocols from ...` expression we found, let's find all the protocols used within them (stuff after `.*`)
-				//    instead of `.*` we'll find `._jsProtocol.`: let's also remove that bit
-				for( const [blockPath, protocolNS] of protocolNamespaces ) {
+				// 3. for each `use traits * from ...` expression we found, let's find all the traits used within them (stuff after `.*`)
+				//    instead of `.*` we'll find `._Straits.`: let's also remove that bit
+				for( const [blockPath, traitNS] of traitNamespaces ) {
 					blockPath.traverse({
 						BlockStatement( subBlock ) {
-							if( protocolNamespaces.has(subBlock) ) {
+							if( traitNamespaces.has(subBlock) ) {
 								subBlock.skip();
 							}
 						},
 						Identifier( path ) {
 							const node = path.node;
-							if( node.name !== '_jsProtocol' ) {
+							if( node.name !== '_Straits' ) {
 								return;
 							}
 
-							// parentPath is the `(...)._jsProtocol` expression
+							// parentPath is the `(...)._Straits` expression
 							// symbolPath is the `(...).${symbol}` one
 							const parentPath = path.parentPath;
 							let symbolPath;
@@ -195,7 +193,7 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 							}
 
 							/*
-							// removing the `._jsProtocol` part
+							// removing the `._Straits` part
 							{
 								parentPath.replaceWith(
 									parentPath.node.object
@@ -212,7 +210,7 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 							// generating a new unique identifier for the symbol, and replacing the current symbol id with it:
 							// from `(...).${symbolName}` to `(...)[${newSymbolName}]`
 							const prop = symbolPath.node.property;
-							const newSymbolIdentifier = protocolNS.provideSymbol( prop.name );
+							const newSymbolIdentifier = traitNS.provideSymbol( prop.name );
 							symbolPath.replaceWith(
 								t.memberExpression(
 									parentPath.node.object,
@@ -224,19 +222,19 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 					});
 				}
 
-				for( const protocolNS of protocolNamespaces.values() ) {
-					protocolNS.finalize( getSymbolIdentifier );
+				for( const traitNS of traitNamespaces.values() ) {
+					traitNS.finalize( getSymbolIdentifier );
 				}
-				for( const protocolNS of protocolNamespaces.values() ) {
-					protocolNS.remove();
+				for( const traitNS of traitNamespaces.values() ) {
+					traitNS.remove();
 				}
 
-				// turning `_jsProtocol` within strings into `.*`
-				// NOTE: if a string had `_jsProtocol` originally, that'd be screwed up, escape those, maybe?
+				// turning `_Straits` within strings into `.*`
+				// NOTE: if a string had `_Straits` originally, that'd be screwed up, escape those, maybe?
 				function cleanString( str ) {
 					return str
-						.replace(/\._jsProtocol\.?/g, `.*` )
-						.replace(/_jsProtocolProvider:/g,  `use protocols from` );
+						.replace(/\._Straits\.?/g, `.*` )
+						.replace(/_StraitsProvider:/g,  `use traits * from` );
 				}
 				path.traverse({
 					StringLiteral( literalPath ) {

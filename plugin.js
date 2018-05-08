@@ -114,6 +114,7 @@ module.exports = function( arg ) {
 				const traitNamespaces = new Map();
 				const testTraitSetIdentifier = path.scope.generateUidIdentifier(`testTraitSet`);
 				const getSymbolIdentifier = path.scope.generateUidIdentifier(`getSymbol`);
+				const implSymbolIdentifier = path.scope.generateUidIdentifier(`implSymbol`);
 
 				// 1. marking all the blocks that contain a `_StraitsProvider` expression, and removing those.
 				path.traverse({
@@ -137,7 +138,7 @@ module.exports = function( arg ) {
 					return;
 				}
 
-				// prepending the `getSymbol`: function to the top of the file
+				// prepending the `testTraitSet` function to the top of the file
 				// it makes sure that all the `use traits * from` statements must have a valid object as expression
 				{
 					const testTraitBuilder = template(`
@@ -150,7 +151,7 @@ function TEST_TRAIT_SET( traitSet ) {
 					path.unshiftContainer('body', testTraitBuilder({ TEST_TRAIT_SET:testTraitSetIdentifier }) );
 				}
 
-				// prepending the `getSymbol`: function to the top of the file
+				// prepending the `getSymbol` function to the top of the file
 				// it resolves traits
 				{
 					const getSymbolBuilder = template(`
@@ -171,6 +172,18 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 }
 					`);
 					path.unshiftContainer('body', getSymbolBuilder({ GET_SYMBOL:getSymbolIdentifier }) );
+				}
+
+				// prepending the `implSymbol` function to the top of the file
+				// it's used to implement traits
+				{
+					const implSymbolBuilder = template(`
+function IMPL_SYMBOL( target, sym, value ) {
+	Object.defineProperty( target, sym, {value} );
+	return target[sym];
+}
+					`);
+					path.unshiftContainer('body', implSymbolBuilder({ IMPL_SYMBOL:implSymbolIdentifier }) );
 				}
 
 				// 2. for each `use traits * from ...` expression we found, let's iterate backwards: if we see that some other `use traits * from ...` was defined in a higher scope, let's apply that expression here as well
@@ -202,30 +215,31 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 								return;
 							}
 
-							// parentPath is the `(...)._Straits` expression
+							// straitsOperatorPath is the `(...)._Straits` expression
 							// traitPath is the `(...).${symbol}` one
-							const parentPath = path.parentPath;
-							let traitPath;
-							{
-								const parent = parentPath.node;
-								assert( parent.type === 'MemberExpression' );
-								assert( parent.computed === false );
+							// parentPath is the expression above `traitPath`. is that an assignment?
+							const straitsOperatorPath = path.parentPath;
+							const traitPath = (()=>{
+								const straitsOperator = straitsOperatorPath.node;
+								assert( straitsOperator.type === 'MemberExpression' );
+								assert( straitsOperator.computed === false );
 
-								const prop = parent.property;
+								const prop = straitsOperator.property;
 								assert( prop === node );
 
-								traitPath = parentPath.parentPath;
-							}
+								return straitsOperatorPath.parentPath;
+							})();
+							const parentPath = traitPath.parentPath;
 
 							{
 								const traitParent = traitPath.node;
 								assert( traitParent.type === 'MemberExpression' );
-								assert( traitParent.object === parentPath.node );
+								assert( traitParent.object === straitsOperatorPath.node );
 							}
 
 							// fixing the cases where the original code was not `(...).*${symbol}`, but `.*[x.y]`
 							if( traitPath.node.computed ) {
-								parentPath.replaceWith( parentPath.node.object );
+								straitsOperatorPath.replaceWith( straitsOperatorPath.node.object );
 								return;
 							}
 
@@ -235,11 +249,25 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 							const newSymbolIdentifier = traitNS.provideSymbol( prop.name );
 							traitPath.replaceWith(
 								t.memberExpression(
-									parentPath.node.object,
+									straitsOperatorPath.node.object,
 									newSymbolIdentifier,
 									true
 								)
 							);
+
+							// if the `.*` operator is used in an assignment (i.e. `a.*b = c` ), wa want to use `Object.defineProperty`
+							if( parentPath.type === 'AssignmentExpression' && parentPath.node.operator === '=' && parentPath.node.left === traitPath.node ) {
+								parentPath.replaceWith(
+									t.callExpression(
+										implSymbolIdentifier,
+										[
+											straitsOperatorPath.node.object,
+											newSymbolIdentifier,
+											parentPath.node.right,
+										]
+									)
+								)
+							}
 						}
 					});
 				}

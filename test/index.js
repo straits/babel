@@ -65,6 +65,13 @@ const parseTests = [
 	parseTest(`use traits * from ({});`,			),
 	parseTest(`use traits * from ({}); a.*b`,			),
 	parseTest(`a.*[b]`,			),
+	parseTest(`use traits * from ({}); 3.*b`,			),
+	parseTest(`use traits * from ({}); -3.*b`,			),
+	parseTest(`use traits * from ({}); 3e3.*b`,			),
+	parseTest(`use traits * from ({}); 3e-3.*b`,			),
+	parseTest(`use traits * from ({}); 3.5.*b`,			),
+	parseTest(`use traits * from ({}); 3.5E+1.*b`,			),
+	parseTest(`use traits * from ({}); NaN.*b`,			),
 ];
 
 describe(`straits-babel`, function(){

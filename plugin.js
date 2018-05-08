@@ -188,7 +188,7 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 				}
 
 				// 3. for each `use traits * from ...` expression we found, let's find all the traits used within them (stuff after `.*`)
-				//    instead of `.*` we'll find `._Straits.`: let's also remove that bit
+				//    instead of `.*` we'll find `._Straits.`: `a.*b` => `a._Straits.b`
 				for( const [blockPath, traitNS] of traitNamespaces ) {
 					blockPath.traverse({
 						BlockStatement( subBlock ) {
@@ -203,9 +203,9 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 							}
 
 							// parentPath is the `(...)._Straits` expression
-							// symbolPath is the `(...).${symbol}` one
+							// traitPath is the `(...).${symbol}` one
 							const parentPath = path.parentPath;
-							let symbolPath;
+							let traitPath;
 							{
 								const parent = parentPath.node;
 								assert( parent.type === 'MemberExpression' );
@@ -214,35 +214,26 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 								const prop = parent.property;
 								assert( prop === node );
 
-								symbolPath = parentPath.parentPath;
+								traitPath = parentPath.parentPath;
 							}
 
 							{
-								const symbolParent = symbolPath.node;
-								assert( symbolParent.type === 'MemberExpression' );
-								assert( symbolParent.object === parentPath.node );
+								const traitParent = traitPath.node;
+								assert( traitParent.type === 'MemberExpression' );
+								assert( traitParent.object === parentPath.node );
 							}
 
-							/*
-							// removing the `._Straits` part
-							{
-								parentPath.replaceWith(
-									parentPath.node.object
-								);
-							}
-							*/
-
-							// fixing the cases where the original code was not `(...).*${symbol}`, but something else, like `.*(x.y)`
-							if( symbolPath.node.computed ) {
+							// fixing the cases where the original code was not `(...).*${symbol}`, but `.*[x.y]`
+							if( traitPath.node.computed ) {
 								parentPath.replaceWith( parentPath.node.object );
 								return;
 							}
 
 							// generating a new unique identifier for the symbol, and replacing the current symbol id with it:
 							// from `(...).${symbolName}` to `(...)[${newSymbolName}]`
-							const prop = symbolPath.node.property;
+							const prop = traitPath.node.property;
 							const newSymbolIdentifier = traitNS.provideSymbol( prop.name );
-							symbolPath.replaceWith(
+							traitPath.replaceWith(
 								t.memberExpression(
 									parentPath.node.object,
 									newSymbolIdentifier,

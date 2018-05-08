@@ -4,7 +4,7 @@
 const babylon = require('babylon');
 
 module.exports = Object.assign({}, babylon, {
-	parse( code, options={} ) {
+	parse( code, options ) {
 		code = code
 			.replace(/((?:NaN|Infinity|-?(?:(?:\d+|\d*\.\d+)(?:[Ee][+-]?\d+)?)))\.\*/g, (match, num)=>`(${num}).*` )
 			.replace(/\.\*\[/g, `[` )

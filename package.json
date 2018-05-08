@@ -1,6 +1,6 @@
 {
 	"name": "straits-babel",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Babel straits syntax plugin",
 	"main": "index.js",
 	"scripts": {

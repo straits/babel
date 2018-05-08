@@ -101,9 +101,10 @@ describe(`straits-babel/plugin`, function(){
 		expect( evalFile(`./test/data/1.js`) ).to.equal( 1 );
 		expect( evalFile(`./test/data/2.js`) ).to.equal( 2 );
 		expect( evalFile(`./test/data/3.js`) ).to.equal( 3 );
-		expect( ()=>evalFile(`./test/data/conflict.js`) ).to.throw(/Symbol x offered by multiple symbol sets./);
+		expect( ()=>evalFile(`./test/data/undefined_traits.js`) ).to.throw(/null cannot be used as a trait set./);
+		expect( ()=>evalFile(`./test/data/conflict.js`) ).to.throw(/Symbol x offered by multiple trait sets./);
 		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used, without using any traits./);
-		expect( ()=>evalFile(`./test/data/missing_symbol.js`) ).to.throw(/No symbol set is providing symbol x/);
+		expect( ()=>evalFile(`./test/data/missing_symbol.js`) ).to.throw(/No trait set is providing symbol x/);
 	});
 
 	it(`Works with Symbol`, function(){

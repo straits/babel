@@ -50,6 +50,22 @@ class TraitNamespace {
 		return newSymbolIdentifier;
 	}
 
+	writeCheck( testTraitSetIdentifier ) {
+		const providingExpressions =  Array.from(this.providers).map( p=>p.node.body.expression );
+
+		providingExpressions.forEach( (traitSetExpr)=>{
+			this.path.insertBefore(
+				t.expressionStatement(
+					t.callExpression(
+						testTraitSetIdentifier,
+						[
+							traitSetExpr
+						]
+					)
+				)
+			);
+		});
+	}
 	finalize( getSymbolIdentifier ) {
 		const providingExpressions =  Array.from(this.providers).map( p=>p.node.body.expression );
 
@@ -96,6 +112,7 @@ module.exports = function( arg ) {
 		visitor: {
 			Program( path, state ) {
 				const traitNamespaces = new Map();
+				const testTraitSetIdentifier = path.scope.generateUidIdentifier(`testTraitSet`);
 				const getSymbolIdentifier = path.scope.generateUidIdentifier(`getSymbol`);
 
 				// 1. marking all the blocks that contain a `_StraitsProvider` expression, and removing those.
@@ -113,7 +130,6 @@ module.exports = function( arg ) {
 					}
 				});
 
-
 				// if we didn't find any `use traits * from` statements, we can return
 				// TODO: actually, we should fix `.*` anyways, but I'll code that that another day :P
 				if( traitNamespaces.size === 0 ) {
@@ -121,26 +137,41 @@ module.exports = function( arg ) {
 					return;
 				}
 
-				// if we found at least one `use traits * from` statement, let's generate the `getSymbol` function
-				const getSymbolBuilder = template(`
-function GET_SYMBOL( targetSymName, ...symbolSets ) {
+				// prepending the `getSymbol`: function to the top of the file
+				// it makes sure that all the `use traits * from` statements must have a valid object as expression
+				{
+					const testTraitBuilder = template(`
+function TEST_TRAIT_SET( traitSet ) {
+	if( ! traitSet || typeof traitSet === 'boolean' || typeof traitSet === 'number' || typeof traitSet === 'string' ) {
+		throw new Error(\`\${traitSet} cannot be used as a trait set.\`);
+	}
+}
+					`);
+					path.unshiftContainer('body', testTraitBuilder({ TEST_TRAIT_SET:testTraitSetIdentifier }) );
+				}
+
+				// prepending the `getSymbol`: function to the top of the file
+				// it resolves traits
+				{
+					const getSymbolBuilder = template(`
+function GET_SYMBOL( targetSymName, ...traitSets ) {
 	let symbol;
-	symbolSets.forEach( symbolSet=>{
-		if( typeof symbolSet[targetSymName] === 'symbol' ) {
+	traitSets.forEach( traitSet=>{
+		if( typeof traitSet[targetSymName] === 'symbol' ) {
 			if( !! symbol ) {
-				throw new Error(\`Symbol \${targetSymName} offered by multiple symbol sets.\`);
+				throw new Error(\`Symbol \${targetSymName} offered by multiple trait sets.\`);
 			}
-			symbol = symbolSet[targetSymName];
+			symbol = traitSet[targetSymName];
 		}
 	});
 	if( ! symbol ) {
-		throw new Error(\`No symbol set is providing symbol \${targetSymName}.\`);
+		throw new Error(\`No trait set is providing symbol \${targetSymName}.\`);
 	}
 	return symbol;
 }
-				`)
-
-				path.unshiftContainer('body', getSymbolBuilder({ GET_SYMBOL:getSymbolIdentifier }) );
+					`);
+					path.unshiftContainer('body', getSymbolBuilder({ GET_SYMBOL:getSymbolIdentifier }) );
+				}
 
 				// 2. for each `use traits * from ...` expression we found, let's iterate backwards: if we see that some other `use traits * from ...` was defined in a higher scope, let's apply that expression here as well
 				for( const [blockPath, traitNS] of traitNamespaces ) {
@@ -223,6 +254,7 @@ function GET_SYMBOL( targetSymName, ...symbolSets ) {
 				}
 
 				for( const traitNS of traitNamespaces.values() ) {
+					traitNS.writeCheck( testTraitSetIdentifier );
 					traitNS.finalize( getSymbolIdentifier );
 				}
 				for( const traitNS of traitNamespaces.values() ) {

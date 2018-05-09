@@ -51,15 +51,13 @@ class TraitNamespace {
 	}
 
 	writeCheck( testTraitSetIdentifier ) {
-		const providingExpressions =  Array.from(this.providers).map( p=>p.node.body.expression );
-
-		providingExpressions.forEach( (traitSetExpr)=>{
-			this.path.insertBefore(
+		this.providers.forEach( (providerPath)=>{
+			providerPath.insertBefore(
 				t.expressionStatement(
 					t.callExpression(
 						testTraitSetIdentifier,
 						[
-							traitSetExpr
+							providerPath.node.body.expression
 						]
 					)
 				)

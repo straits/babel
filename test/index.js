@@ -87,7 +87,7 @@ describe(`straits-babel`, function(){
 });
 
 describe(`straits-babel/plugin`, function(){
-	it(`Parses correctly`, function(){
+	it(`Transpiles correctly`, function(){
 		parseTests.forEach( ({code, thrownByTransform})=>{
 			if( thrownByTransform ) {
 				expect( ()=>transform(code) ).to.throw(thrownByTransform);
@@ -97,7 +97,7 @@ describe(`straits-babel/plugin`, function(){
 		});
 	});
 
-	it(`Transpiles correctly`, function(){
+	it(`Works correctly with simple cases`, function(){
 		expect( evalFile(`./test/data/1.js`) ).to.equal( 1 );
 		expect( evalFile(`./test/data/2.js`) ).to.equal( 2 );
 		expect( evalFile(`./test/data/3.js`) ).to.equal( 3 );
@@ -113,5 +113,9 @@ describe(`straits-babel/plugin`, function(){
 
 	it(`Same trait doesn't conflict with itself`, function(){
 		expect( ()=>evalFile(`./test/data/same_trait.js`) ).not.to.throw();
+	});
+
+	it(`Traits can be used right after their definition`, function(){
+		expect( ()=>evalFile(`./test/data/use_traits_after_definition.js`) ).not.to.throw();
 	});
 });

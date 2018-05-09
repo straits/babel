@@ -110,4 +110,8 @@ describe(`straits-babel/plugin`, function(){
 	it(`Works with Symbol`, function(){
 		expect( ()=>evalFile(`./test/data/symbol.js`) ).not.to.throw();
 	});
+
+	it(`Same trait doesn't conflict with itself`, function(){
+		expect( ()=>evalFile(`./test/data/same_trait.js`) ).not.to.throw();
+	});
 });

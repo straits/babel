@@ -158,11 +158,12 @@ function TEST_TRAIT_SET( traitSet ) {
 function GET_SYMBOL( targetSymName, ...traitSets ) {
 	let symbol;
 	traitSets.forEach( traitSet=>{
-		if( typeof traitSet[targetSymName] === 'symbol' ) {
-			if( !! symbol ) {
+		const sym = traitSet[targetSymName];
+		if( typeof sym === 'symbol' ) {
+			if( !! symbol && symbol !== sym ) {
 				throw new Error(\`Symbol \${targetSymName} offered by multiple trait sets.\`);
 			}
-			symbol = traitSet[targetSymName];
+			symbol = sym;
 		}
 	});
 	if( ! symbol ) {

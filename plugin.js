@@ -178,7 +178,7 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 				{
 					const implSymbolBuilder = template(`
 function IMPL_SYMBOL( target, sym, value ) {
-	Object.defineProperty( target, sym, {value} );
+	Object.defineProperty( target, sym, {value, configurable:true} );
 	return target[sym];
 }
 					`);

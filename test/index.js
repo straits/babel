@@ -118,4 +118,8 @@ describe(`straits-babel/plugin`, function(){
 	it(`Traits can be used right after their definition`, function(){
 		expect( ()=>evalFile(`./test/data/use_traits_after_definition.js`) ).not.to.throw();
 	});
+
+	it(`Traits can reassigned`, function(){
+		expect( ()=>evalFile(`./test/data/reassign.js`) ).not.to.throw();
+	});
 });

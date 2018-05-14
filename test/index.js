@@ -120,6 +120,10 @@ describe(`straits-babel/plugin`, function(){
 		expect( ()=>evalFile(`./test/data/use_traits_after_definition.js`) ).not.to.throw();
 	});
 
+	it(`Traits work in subscopes`, function(){
+		expect( ()=>evalFile(`./test/data/subscope.js`) ).not.to.throw();
+	});
+
 	it(`Traits assigned with .* are not enumerable`, function(){
 		expect( ()=>evalFile(`./test/data/traits_not_enumerable.js`) ).not.to.throw();
 	});

@@ -8,151 +8,41 @@ const template = require('babel-template');
 const generate = require('babel-generator').default;
 const t = require('babel-types');
 
-function defaultGet( key, defaultConstructor ) {
-	if( this.has(key) ) {
-		return this.get( key );
-	} else {
-		const value = defaultConstructor( key );
-		this.set( key, value );
-		return value;
-	}
+const DEBUG = false;
+const debug = DEBUG ?
+	{
+		group() { return console.group( ...arguments ); },
+		log() { return console.error( ...arguments ); },
+		groupEnd() { return console.groupEnd( ...arguments ); },
+	} :
+	{
+		group(){},
+		log(){},
+		groupEnd(){},
+	};
+
+// turning `_Straits` within strings into `.*`
+// NOTE: if a string had `_Straits` originally, that'd be screwed up, escape those, maybe?
+function cleanString( str ) {
+	return str
+		.replace(/\._Straits\.?/g, `.*` )
+		.replace(/_StraitsProvider:/g,  `use traits * from` );
 }
 
-// a namespace where we're gonna look for symbols
-// it must be composed by at least one expression used in a `use traits * from` statement.
-class TraitNamespace {
-	constructor( path ) {
-		assert( path.node.type === 'LabeledStatement' );
-		assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
-
-		this.path = path;
-		this.blockPath = path.parentPath;
-		this.providers = new Set();
-		this.symbols = new Map();
-
-		this.addProvider( path );
-	}
-
-	addProvider( path ) {
-		this.providers.add( path );
-
-		if( ! path.node.body.expression ) {
-			throw path.buildCodeFrameError(`"use traits * from" requires an expression.`);
-		}
-	}
-
-	provideSymbol( symName ) {
-		if( this.symbols.has(symName) ) {
-			return this.symbols.get(symName);
-		}
-		const newSymbolIdentifier = this.blockPath.scope.generateUidIdentifier( symName );
-		this.symbols.set( symName, newSymbolIdentifier );
-		return newSymbolIdentifier;
-	}
-
-	writeCheck( testTraitSetIdentifier ) {
-		this.providers.forEach( (providerPath)=>{
-			providerPath.insertBefore(
-				t.expressionStatement(
-					t.callExpression(
-						testTraitSetIdentifier,
-						[
-							providerPath.node.body.expression
-						]
-					)
-				)
-			);
-		});
-	}
-	finalize( getSymbolIdentifier ) {
-		const providingExpressions =  Array.from(this.providers).map( p=>p.node.body.expression );
-
-		if( ! this.symbols.size ) {
-			return;
-		}
-
-		this.path.insertBefore(
-			t.variableDeclaration(
-				`const`,
-				Array.from(this.symbols.entries()).map( ([name, id])=>{
-					return t.variableDeclarator(
-						id,
-						t.callExpression(
-							getSymbolIdentifier,
-							[
-								t.stringLiteral(name),
-								...providingExpressions,
-							]
-						)
-					);
-				})
-			)
-		);
-	}
-	remove() {
-		this.path.remove();
-	}
-}
-
-function finalCheck( path ) {
-	// making sure that no `_Straits` was left unresolved
-	path.traverse({
-		Identifier( path ) {
-			if( path.node.name === `_Straits` ) {
-				throw path.buildCodeFrameError(`.* used, without using any traits.`);
-			}
-		}
-	});
-}
-
-module.exports = function( arg ) {
-	return {
-		visitor: {
-			Program( path, state ) {
-				const traitNamespaces = new Map();
-				const testTraitSetIdentifier = path.scope.generateUidIdentifier(`testTraitSet`);
-				const getSymbolIdentifier = path.scope.generateUidIdentifier(`getSymbol`);
-				const implSymbolIdentifier = path.scope.generateUidIdentifier(`implSymbol`);
-
-				// 1. marking all the blocks that contain a `_StraitsProvider` expression, and removing those.
-				path.traverse({
-					LabeledStatement( path ) {
-						const node = path.node;
-						if( node.label.name !== '_StraitsProvider' ) {
-							return;
-						}
-
-						assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
-
-						const traitNS = defaultGet.call( traitNamespaces, path.parentPath, ()=>new TraitNamespace(path) );
-						traitNS.addProvider( path );
-					}
-				});
-
-				// if we didn't find any `use traits * from` statements, we can return
-				// TODO: actually, we should fix `.*` anyways, but I'll code that that another day :P
-				if( traitNamespaces.size === 0 ) {
-					finalCheck( path ); // making sure that everythign is fine
-					return;
-				}
-
-				// prepending the `testTraitSet` function to the top of the file
-				// it makes sure that all the `use traits * from` statements must have a valid object as expression
-				{
-					const testTraitBuilder = template(`
+function generateStraitsFunctions( path ) {
+	// testTraitSet( traitSet )
+	// it makes sure that all the `use traits * from` statements have a valid object as expression
+	const testTraitBuilder = template(`
 function TEST_TRAIT_SET( traitSet ) {
 	if( ! traitSet || typeof traitSet === 'boolean' || typeof traitSet === 'number' || typeof traitSet === 'string' ) {
 		throw new Error(\`\${traitSet} cannot be used as a trait set.\`);
 	}
 }
-					`);
-					path.unshiftContainer('body', testTraitBuilder({ TEST_TRAIT_SET:testTraitSetIdentifier }) );
-				}
+	`);
 
-				// prepending the `getSymbol` function to the top of the file
-				// it resolves traits
-				{
-					const getSymbolBuilder = template(`
+	// getSymbol( targetSymName, ...traits )
+	// looks for `targetSymName` inside `traits`, and returns the trait, if found
+	const getSymbolBuilder = template(`
 function GET_SYMBOL( targetSymName, ...traitSets ) {
 	let symbol;
 	traitSets.forEach( traitSet=>{
@@ -169,158 +59,317 @@ function GET_SYMBOL( targetSymName, ...traitSets ) {
 	}
 	return symbol;
 }
-					`);
-					path.unshiftContainer('body', getSymbolBuilder({ GET_SYMBOL:getSymbolIdentifier }) );
-				}
+	`);
 
-				// prepending the `implSymbol` function to the top of the file
-				// it's used to implement traits
-				{
-					const implSymbolBuilder = template(`
+	// implSymbol( target, sym, value ): `target.*[sym] = value`
+	const implSymbolBuilder = template(`
 function IMPL_SYMBOL( target, sym, value ) {
 	Object.defineProperty( target, sym, {value, configurable:true} );
 	return target[sym];
 }
-					`);
-					path.unshiftContainer('body', implSymbolBuilder({ IMPL_SYMBOL:implSymbolIdentifier }) );
-				}
+	`);
 
-				// 2. for each `use traits * from ...` expression we found, let's iterate backwards: if we see that some other `use traits * from ...` was defined in a higher scope, let's apply that expression here as well
-				for( const [blockPath, traitNS] of traitNamespaces ) {
-					let parentPath = blockPath.parentPath;
-					while( parentPath ) {
-						if( traitNamespaces.has(parentPath) ) {
-							traitNamespaces.get(parentPath).providers.forEach( p=>{
-								traitNS.addProvider( p );
-							});
-						}
+	// generating identifiers for the above functions
+	const identifiers = {
+		testTraitSet: path.scope.generateUidIdentifier(`testTraitSet`),
+		getSymbol: path.scope.generateUidIdentifier(`getSymbol`),
+		implSymbol: path.scope.generateUidIdentifier(`implSymbol`),
+	}
 
-						parentPath = parentPath.parentPath;
+	// adding to the AST the code for the above functions
+	path.unshiftContainer('body', testTraitBuilder({ TEST_TRAIT_SET:identifiers.testTraitSet }) );
+	path.unshiftContainer('body', getSymbolBuilder({ GET_SYMBOL:identifiers.getSymbol }) );
+	path.unshiftContainer('body', implSymbolBuilder({ IMPL_SYMBOL:identifiers.implSymbol }) );
+
+	// returning the identifiers
+	return identifiers;
+}
+
+
+class UseTraitStatement {
+	constructor( path, expr ) {
+		this.path = path; // the AST node representing this statement
+		this.expr = expr; // the trait set expression
+
+		this.scope = null;
+	}
+}
+class StraitsExpression {
+	constructor( path, target, symbolName ) {
+		this.path = path;
+		this.target = target;
+		this.symbolName = symbolName;
+
+		this.assignmentPath = null;
+		this.assignmentValue = null;
+		this.scope = null;
+	}
+}
+class StraitsScope {
+	constructor( path, traitSets ) {
+		this.path = path;	// path where the scope begins
+		this.traitSets = new Set(traitSets);	// the traitSets affecting this scope
+		this.symbols = new Map();	// the symbols resolved in this scope
+	}
+}
+
+module.exports = function( arg ) {
+	return {
+		pre() {
+			assert( ! this.straits );
+
+			this.straits = {
+				useTraitStatements: [],
+				straitsExpressions: [],
+
+				scopeStack: [],
+				currentScope: new StraitsScope(),
+			}
+		},
+		visitor: {
+			Program: {
+				enter( path ) {
+					const {straits} = this;
+
+					debug.log(`-----START PROGRAM-----`);
+					debug.group();
+				},
+				exit( path ) {
+					debug.groupEnd();
+					debug.log(`----- END  PROGRAM-----`);
+
+					const {straits} = this;
+					delete this.straits;
+
+					assert( straits.scopeStack.length === 0 );
+
+					// if we didn't find any `use traits * from` statements, we can terminate immediately
+					if( straits.useTraitStatements.length === 0 ) {
+						assert( straits.straitsExpressions.length === 0 );
+						return;
 					}
-				}
 
-				// 3. for each `use traits * from ...` expression we found, let's find all the traits used within them (stuff after `.*`)
-				//    instead of `.*` we'll find `._Straits.`: `a.*b` => `a._Straits.b`
-				for( const [blockPath, traitNS] of traitNamespaces ) {
-					blockPath.traverse({
-						BlockStatement( subBlock ) {
-							if( traitNamespaces.has(subBlock) ) {
-								subBlock.skip();
-							}
-						},
-						Identifier( path ) {
-							const node = path.node;
-							if( node.name !== '_Straits' ) {
-								return;
-							}
+					// generating global functions
+					const traitFns = generateStraitsFunctions( path );
 
-							// straitsOperatorPath is the `(...)._Straits` expression
-							// traitPath is the `(...).${symbol}` one
-							// parentPath is the expression above `traitPath`. is that an assignment?
-							const straitsOperatorPath = path.parentPath;
-							const traitPath = (()=>{
-								const straitsOperator = straitsOperatorPath.node;
-								assert( straitsOperator.type === 'MemberExpression' );
-								assert( straitsOperator.computed === false );
-
-								const prop = straitsOperator.property;
-								assert( prop === node );
-
-								return straitsOperatorPath.parentPath;
-							})();
-							const parentPath = traitPath.parentPath;
-
-							{
-								const traitParent = traitPath.node;
-								assert( traitParent.type === 'MemberExpression' );
-								assert( traitParent.object === straitsOperatorPath.node );
-							}
-
-							// fixing the cases where the original code was not `(...).*${symbol}`, but `.*[x.y]`
-							if( traitPath.node.computed ) {
-								straitsOperatorPath.replaceWith( straitsOperatorPath.node.object );
-								return;
-							}
-
-							// generating a new unique identifier for the symbol, and replacing the current symbol id with it:
-							// from `(...).${symbolName}` to `(...)[${newSymbolName}]`
-							const prop = traitPath.node.property;
-							const newSymbolIdentifier = traitNS.provideSymbol( prop.name );
-							traitPath.replaceWith(
-								t.memberExpression(
-									straitsOperatorPath.node.object,
-									newSymbolIdentifier,
-									true
+					// writing a `testTraitSet` call where each `use trait` statement is
+					straits.useTraitStatements.forEach( (uts)=>{
+						uts.path.insertBefore(
+							t.expressionStatement(
+								t.callExpression(
+									traitFns.testTraitSet,
+									[
+										uts.expr
+									]
 								)
-							);
+							)
+						);
+					});
 
-							// if the `.*` operator is used in an assignment (i.e. `a.*b = c` ), wa want to use `Object.defineProperty`
-							if( parentPath.type === 'AssignmentExpression' && parentPath.node.operator === '=' && parentPath.node.left === traitPath.node ) {
-								parentPath.replaceWith(
-									t.callExpression(
-										implSymbolIdentifier,
+					// for each `.*` usage, let's resolve the symbol and replace the expression
+					{
+						straits.straitsExpressions.forEach( (se)=>{
+							const {scope, symbolName} = se;
+							const {symbols} = scope;
+
+							// if the symbol was not used before, let's resolve it...
+							if( ! symbols.has(symbolName) ) {
+								const symbolIdentifier = path.scope.generateUidIdentifier( symbolName );
+								symbols.set( symbolName, symbolIdentifier );
+
+								// adding the `getSymbol( symName, ...traitSets )` line
+								scope.path.insertBefore(
+									t.variableDeclaration(
+										`const`,
 										[
-											straitsOperatorPath.node.object,
-											newSymbolIdentifier,
-											parentPath.node.right,
+											t.variableDeclarator(
+												symbolIdentifier,
+												t.callExpression(
+													traitFns.getSymbol,
+													[
+														t.stringLiteral(symbolName),
+														...Array.from( scope.traitSets ).map( uts=>uts.expr )
+													]
+												)
+											)
+										]
+									)
+								);
+							}
+
+							// using the symbol
+							const symbolIdentifier = symbols.get( symbolName );
+
+							if( se.assignmentPath ) {
+								se.assignmentPath.replaceWith(
+									t.callExpression(
+										traitFns.implSymbol,
+										[
+											se.target,
+											symbolIdentifier,
+											se.assignmentValue,
 										]
 									)
 								)
 							}
-						}
-					});
+							else {
+								se.path.replaceWith(
+									t.memberExpression(
+										se.target,
+										symbolIdentifier,
+										true
+									)
+								);
+							}
+						});
+					}
+
+					// removing everything that is unneeded...
+					{
+						straits.useTraitStatements.forEach( (uts)=>{
+							uts.path.remove();
+						});
+					}
+				}
+			},
+
+			BlockStatement: {
+				enter( path ) {
+					if( ! this.straits ) { return; }
+					const {straits} = this;
+					straits.scopeStack.push( straits.currentScope );
+
+					debug.log(`{`);
+					debug.group();
+				},
+				exit( path ) {
+					if( ! this.straits ) { return; }
+					const {straits} = this;
+					straits.currentScope = straits.scopeStack.pop();
+
+					debug.groupEnd();
+					debug.log(`}`);
+				}
+			},
+
+			// `use straits * from EXPR`
+			LabeledStatement( path ) {
+				if( ! this.straits ) { return; }
+				const {straits} = this;
+
+				const node = path.node;
+				if( node.label.name !== '_StraitsProvider' ) {
+					return;
 				}
 
-				for( const traitNS of traitNamespaces.values() ) {
-					traitNS.writeCheck( testTraitSetIdentifier );
-					traitNS.finalize( getSymbolIdentifier );
+				assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
+				assert( path.node.body.type === 'ExpressionStatement', `\`use traits\` requires an expression.` )
+
+				debug.log( `use traits * from ${generate(path.node.body.expression).code};` );
+
+				const useTraitStatement = new UseTraitStatement(
+					path,
+					path.node.body.expression
+				);
+
+				straits.currentScope = new StraitsScope( path, straits.currentScope.traitSets );
+				straits.currentScope.traitSets.add( useTraitStatement );
+				useTraitStatement.scope = straits.currentScope;
+
+				straits.useTraitStatements.push( useTraitStatement );
+			},
+
+			// a.*b
+			Identifier( path ) {
+				if( ! this.straits ) { return; }
+				const {straits} = this;
+
+				const node = path.node;
+				if( node.name !== '_Straits' ) {
+					return;
 				}
-				for( const traitNS of traitNamespaces.values() ) {
-					traitNS.remove();
+
+				if( straits.currentScope.traitSets.size === 0 ) {
+					throw path.buildCodeFrameError(`.* used outside a \`use traits\` scope.`);
 				}
 
-				// turning `_Straits` within strings into `.*`
-				// NOTE: if a string had `_Straits` originally, that'd be screwed up, escape those, maybe?
-				function cleanString( str ) {
-					return str
-						.replace(/\._Straits\.?/g, `.*` )
-						.replace(/_StraitsProvider:/g,  `use traits * from` );
+				// `a.*b` is represented in the AST as `a._Straits.b`
+				// straitsOperatorPath is the `(...)._Straits` expression
+				// traitPath is the `(...).${symbol}` one
+				// parentPath is the expression above `traitPath`. is that an assignment?
+				const straitsOperatorPath = path.parentPath;
+				const traitPath = (()=>{
+					const straitsOperator = straitsOperatorPath.node;
+					assert( straitsOperator.type === 'MemberExpression' );
+					assert( straitsOperator.computed === false );
+
+					const prop = straitsOperator.property;
+					assert( prop === node );
+
+					return straitsOperatorPath.parentPath;
+				})();
+				const parentPath = traitPath.parentPath;
+
+				{
+					const traitParent = traitPath.node;
+					assert( traitParent.type === 'MemberExpression' );
+					assert( traitParent.object === straitsOperatorPath.node );
 				}
-				path.traverse({
-					StringLiteral( literalPath ) {
-						const str = literalPath.node.value;
-						const newStr = cleanString( str );
-						if( newStr === str ) {
-							return;
-						}
 
-						literalPath.replaceWith(
-							t.stringLiteral(
-								newStr
-							)
-						);
-					},
-					TemplateElement( elementPath ) {
-						const {value, tail} = elementPath.node;
-						const newValue = {
-							raw: cleanString( value.raw ),
-							cooked: cleanString( value.cooked ),
-						};
-						if( newValue.raw === value.raw || newValue.cooked === value.cooked ) {
-							return;
-						}
+				// fixing the cases where the original code was not `(...).*${symbol}`, but `.*[x.y]`
+				if( traitPath.node.computed ) {
+					straitsOperatorPath.replaceWith( straitsOperatorPath.node.object );
+					return;
+				}
 
-						elementPath.replaceWith(
-							t.templateElement(
-								newValue,
-								tail
-							)
-						);
-					},
-				});
+				debug.log( `.*${generate(traitPath.node.property).code}` );
 
-				finalCheck( path ); // making sure that everythign is fine
-			}
-		}
+				const straitsExpression = new StraitsExpression(
+					traitPath,
+					straitsOperatorPath.node.object,
+					traitPath.node.property.name
+				);
+				straitsExpression.scope = straits.currentScope;
+
+				straits.straitsExpressions.push( straitsExpression );
+
+				// if `a.*b = c`
+				if( parentPath.type === 'AssignmentExpression' && parentPath.node.operator === '=' && parentPath.node.left === traitPath.node ) {
+					straitsExpression.assignmentPath = parentPath;
+					straitsExpression.assignmentValue = parentPath.node.right;
+				}
+			},
+
+			StringLiteral( literalPath ) {
+				const str = literalPath.node.value;
+				const newStr = cleanString( str );
+				if( newStr === str ) {
+					return;
+				}
+
+				literalPath.replaceWith(
+					t.stringLiteral(
+						newStr
+					)
+				);
+			},
+			TemplateElement( elementPath ) {
+				const {value, tail} = elementPath.node;
+				const newValue = {
+					raw: cleanString( value.raw ),
+					cooked: cleanString( value.cooked ),
+				};
+				if( newValue.raw === value.raw || newValue.cooked === value.cooked ) {
+					return;
+				}
+
+				elementPath.replaceWith(
+					t.templateElement(
+						newValue,
+						tail
+					)
+				);
+			},
+		},
 	};
 };

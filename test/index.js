@@ -1,4 +1,5 @@
 
+const assert = require('assert');
 const fs = require('fs');
 const babel = require('babel-core');
 const chai = require('chai');
@@ -34,10 +35,10 @@ function evalFile( path ) {
 	const code = transform( fs.readFileSync(path, `utf8`) );
 	// console.log( code );
 
-	const fn = new Function( 'main', code );
+	const fn = new Function( 'console', 'assert', 'expect', 'main', code );
 
 	let result;
-	fn( (mainFn)=>{
+	fn( console, assert, expect, (mainFn)=>{
 		result = mainFn();
 	});
 	return result;
@@ -56,12 +57,12 @@ const parseTests = [
 	parseTest(`a.*()`,	/Unexpected token/,		),
 	parseTest(`a.*(b)`,	/Unexpected token/,		),
 	parseTest(`.*b`,	/Unexpected token/,		),
-	parseTest(`a.*b`,	null,	/\.\* used, without using any traits\./	),
+	parseTest(`a.*b`,	null,	/\.\* used outside a \`use traits\` scope\./	),
 	parseTest(`use traits from ({});`,	/Unexpected token/,		),
 	parseTest(`use traits *;`,	/Unexpected token/,		),
-	parseTest(`use traits * from;`,	null,	/"use traits \* from" requires an expression./	),
+	parseTest(`use traits * from;`,	null,	/\`use traits\` requires an expression./	),
 	parseTest(`use something * from ({});`,	/Unexpected token/,		),
-	parseTest(`use traits * from {};`,	null,	/"use traits \* from" requires an expression./	),
+	parseTest(`use traits * from {};`,	null,	/\`use traits\` requires an expression./	),
 	parseTest(`use traits * from ({});`,			),
 	parseTest(`use traits * from ({}); a.*b`,			),
 	parseTest(`a.*[b]`,			),
@@ -103,7 +104,7 @@ describe(`straits-babel/plugin`, function(){
 		expect( evalFile(`./test/data/3.js`) ).to.equal( 3 );
 		expect( ()=>evalFile(`./test/data/undefined_traits.js`) ).to.throw(/null cannot be used as a trait set./);
 		expect( ()=>evalFile(`./test/data/conflict.js`) ).to.throw(/Symbol x offered by multiple trait sets./);
-		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used, without using any traits./);
+		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used outside a \`use traits\` scope\./);
 		expect( ()=>evalFile(`./test/data/missing_symbol.js`) ).to.throw(/No trait set is providing symbol x/);
 	});
 
@@ -119,7 +120,15 @@ describe(`straits-babel/plugin`, function(){
 		expect( ()=>evalFile(`./test/data/use_traits_after_definition.js`) ).not.to.throw();
 	});
 
+	it(`Traits assigned with .* are not enumerable`, function(){
+		expect( ()=>evalFile(`./test/data/traits_not_enumerable.js`) ).not.to.throw();
+	});
+
 	it(`Traits can reassigned`, function(){
 		expect( ()=>evalFile(`./test/data/reassign.js`) ).not.to.throw();
+	});
+
+	it(`Strings don't change`, function(){
+		expect( ()=>evalFile(`./test/data/strings_dont_change.js`) ).not.to.throw();
 	});
 });

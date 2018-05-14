@@ -1,10 +1,4 @@
 
-function assert( test, msg ) {
-	if( ! test ) {
-		throw new Error(msg);
-	}
-}
-
 use traits * from Symbol;
 
 assert( Array.prototype.*iterator === Array.prototype[Symbol.iterator] );

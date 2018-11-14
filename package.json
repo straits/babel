@@ -1,6 +1,6 @@
 {
 	"name": "straits-babel",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "Babel straits syntax plugin",
 	"main": "index.js",
 	"scripts": {
@@ -10,12 +10,15 @@
 	"homepage": "https://straits.paologiangrandi.it",
 	"license": "ISC",
 	"devDependencies": {
-		"chai": "^4.1.2",
-		"mocha": "^5.1.1"
+		"babel-cli": "^6.26.0",
+		"babel-core": "^6.26.3",
+		"chai": "^4.2.0",
+		"mocha": "^5.2.0"
 	},
 	"dependencies": {
-		"babel-cli": "^6.26.0",
 		"babel-generator": "^6.26.1",
-		"babel-template": "^6.26.0"
+		"babel-template": "^6.26.0",
+		"babel-types": "^6.26.0",
+		"babylon": "^6.18.0"
 	}
 }

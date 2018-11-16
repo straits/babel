@@ -95,14 +95,20 @@ class UseTraitStatement {
 	}
 }
 class StraitsExpression {
-	constructor( path, target, symbolName ) {
+	constructor( path, targetPath, symbolName ) {
 		this.path = path;
-		this.target = target;
+		this.targetPath = targetPath;
 		this.symbolName = symbolName;
 
 		this.assignmentPath = null;
-		this.assignmentValue = null;
 		this.scope = null;
+	}
+
+	get target() {
+		return this.targetPath.node;
+	}
+	get assignmentValue() {
+		return this.assignmentPath.node.right;
 	}
 }
 class StraitsScope {
@@ -121,6 +127,7 @@ module.exports = function( arg ) {
 			this.straits = {
 				useTraitStatements: [],
 				straitsExpressions: [],
+				straitsAssignments: [],
 
 				scopeStack: [],
 				currentScope: new StraitsScope(),
@@ -168,59 +175,65 @@ module.exports = function( arg ) {
 
 					// for each `.*` usage, let's resolve the symbol and replace the expression
 					{
-						straits.straitsExpressions.forEach( (se)=>{
+						function resolveSymbol( se ) {
 							const {scope, symbolName} = se;
 							const {symbols} = scope;
 
+							if( symbols.has(symbolName) ) {
+								return symbols.get( symbolName );;
+							}
+
 							// if the symbol was not used before, let's resolve it...
-							if( ! symbols.has(symbolName) ) {
-								const symbolIdentifier = path.scope.generateUidIdentifier( symbolName );
-								symbols.set( symbolName, symbolIdentifier );
+							const symbolIdentifier = path.scope.generateUidIdentifier( symbolName );
+							symbols.set( symbolName, symbolIdentifier );
 
-								// adding the `getSymbol( symName, ...traitSets )` line
-								scope.path.insertBefore(
-									t.variableDeclaration(
-										`const`,
-										[
-											t.variableDeclarator(
-												symbolIdentifier,
-												t.callExpression(
-													traitFns.getSymbol,
-													[
-														t.stringLiteral(symbolName),
-														...Array.from( scope.traitSets ).map( uts=>uts.expr )
-													]
-												)
-											)
-										]
-									)
-								);
-							}
-
-							// using the symbol
-							const symbolIdentifier = symbols.get( symbolName );
-
-							if( se.assignmentPath ) {
-								se.assignmentPath.replaceWith(
-									t.callExpression(
-										traitFns.implSymbol,
-										[
-											se.target,
+							// adding the `getSymbol( symName, ...traitSets )` line
+							scope.path.insertBefore(
+								t.variableDeclaration(
+									`const`,
+									[
+										t.variableDeclarator(
 											symbolIdentifier,
-											se.assignmentValue,
-										]
-									)
+											t.callExpression(
+												traitFns.getSymbol,
+												[
+													t.stringLiteral(symbolName),
+													...Array.from( scope.traitSets ).map( uts=>uts.expr )
+												]
+											)
+										)
+									]
 								)
-							}
-							else {
-								se.path.replaceWith(
-									t.memberExpression(
+							);
+
+							return symbolIdentifier;
+						}
+
+						straits.straitsExpressions.forEach( (se)=>{
+							const symbolIdentifier = resolveSymbol( se );
+
+							se.path.replaceWith(
+								t.memberExpression(
+									se.target,
+									symbolIdentifier,
+									true
+								)
+							);
+						});
+
+						straits.straitsAssignments.reverse().forEach( (se)=>{
+							const symbolIdentifier = resolveSymbol( se );
+
+							se.assignmentPath.replaceWith(
+								t.callExpression(
+									traitFns.implSymbol,
+									[
 										se.target,
 										symbolIdentifier,
-										true
-									)
-								);
-							}
+										se.assignmentValue,
+									]
+								)
+							)
 						});
 					}
 
@@ -326,17 +339,18 @@ module.exports = function( arg ) {
 
 				const straitsExpression = new StraitsExpression(
 					traitPath,
-					straitsOperatorPath.node.object,
+					straitsOperatorPath.get('object'),
 					traitPath.node.property.name
 				);
 				straitsExpression.scope = straits.currentScope;
 
-				straits.straitsExpressions.push( straitsExpression );
-
 				// if `a.*b = c`
 				if( parentPath.type === 'AssignmentExpression' && parentPath.node.operator === '=' && parentPath.node.left === traitPath.node ) {
 					straitsExpression.assignmentPath = parentPath;
-					straitsExpression.assignmentValue = parentPath.node.right;
+					straits.straitsAssignments.push( straitsExpression );
+				}
+				else {
+					straits.straitsExpressions.push( straitsExpression );
 				}
 			},
 

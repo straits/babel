@@ -135,4 +135,8 @@ describe(`straits-babel/plugin`, function(){
 	it(`Strings don't change`, function(){
 		expect( ()=>evalFile(`./test/data/strings_dont_change.js`) ).not.to.throw();
 	});
+
+	it(`Trait of a trait`, function(){
+		expect( ()=>evalFile(`./test/data/trait_of_trait.js`) ).not.to.throw();
+	});
 });

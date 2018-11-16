@@ -54,7 +54,7 @@ use traits * from Symbol;
 
 Let's look at a more complete one:
 ```javascript
-const {TraitSet} = require('js-protocols').utils;
+const {TraitSet} = require('straits').utils;
 const traitSet1 = new TraitSet('duplicatedTrait', 'trait1');
 const traitSet2 = new TraitSet('duplicatedTrait', 'trait2');
 

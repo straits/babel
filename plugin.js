@@ -3,10 +3,9 @@
 
 const assert = require('assert');
 
-const babylon = require('babylon');
-const template = require('babel-template');
-const generate = require('babel-generator').default;
-const t = require('babel-types');
+const template = require('@babel/template').default;
+const generate = require('@babel/generator').default;
+const t = require('@babel/types');
 
 const DEBUG = false;
 const debug = DEBUG ?

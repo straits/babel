@@ -1,26 +1,25 @@
 
 const assert = require('assert');
 const fs = require('fs');
-const babel = require('babel-core');
+const babel = require('@babel/core');
 const chai = require('chai');
+const straitsParser = require('../index.js');
 
 const {expect} = chai;
 
 
 function parse( code ) {
 	return babel.transform( code, {
-		"parserOpts": {
-			"parser": "./index.js"
-		}
+		"plugins": [
+			{ parserOverride:straitsParser.parse }
+		]
 	}).code;
 }
 
 function transform( code ) {
 	code = babel.transform( code, {
-		"parserOpts": {
-			"parser": "./index.js"
-		},
 		"plugins": [
+			{ parserOverride:straitsParser.parse },
 			"./plugin.js",
 		]
 	}).code;

@@ -1,9 +1,9 @@
 
 'use strict';
 
-const babylon = require('babylon');
+const parser = require('@babel/parser');
 
-module.exports = Object.assign({}, babylon, {
+module.exports = Object.assign({}, parser, {
 	parse( code, options ) {
 		code = code
 			.replace(/((?:NaN|Infinity|-?(?:(?:\d+|\d*\.\d+)(?:[Ee][+-]?\d+)?)))\.\*/g, (match, num)=>`(${num}).*` )
@@ -11,6 +11,6 @@ module.exports = Object.assign({}, babylon, {
 			.replace(/\.\*/g, `._Straits.` )
 			.replace(/use\s+traits\s+\*\s+from/mg, `_StraitsProvider:` );
 
-		return babylon.parse( code, options );
+		return parser.parse( code, options );
 	}
 });

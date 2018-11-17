@@ -1,32 +1,35 @@
 
 # Straits Babel
 
-> A babel parser and plugin implementing the [straits](https://github.com/peoro/straits/) syntax.
+> A babel7 parser and plugin implementing the [straits](https://github.com/peoro/straits/) syntax.
 
  - [Installation](#installation)
  - [Usage](#usage)
  - [Straits syntax](#straits-syntax)
  - [Examples](#examples)
 
+Note: the babel6 version is available on the babel6 branch (straits-babel@^1.x.x).
+
 ## Installation
 
-```
+```bash
 npm install --save-dev straits-babel
 ```
 
 ## Usage
 
-Write the following to `.babelrc`, add it to `package.json` or pass it to `babel.transform()`:
+Write the following to `babel.config.js` in your project folder (or see other [babel's config options](https://babeljs.io/docs/en/config-files#project-wide-configuration)):
 
-```json
-{
-	"parserOpts": {
-		"parser": "straits-babel"
-	},
-	"plugins": [
-		"straits-babel/plugin"
-	]
-}
+```javascript
+module.exports = function( api ) {
+	api.cache.forever();
+	return {
+		"plugins": [
+			{ parserOverride:require('straits-babel').parse },
+			"straits-babel/plugin.js",
+		]
+	};
+};
 ```
 
 Then use [`babel`](https://babeljs.io/docs/en/index.html), `babel-node` or equivalent to transpile the straits syntax into valid JavaScript.

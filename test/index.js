@@ -17,14 +17,12 @@ function parse( code ) {
 }
 
 function transform( code ) {
-	code = babel.transform( code, {
+	return babel.transform( code, {
 		"plugins": [
 			{ parserOverride:straitsParser.parse },
 			"./plugin.js",
 		]
 	}).code;
-
-	return code;
 }
 
 function transformFile( path ) {
@@ -64,7 +62,6 @@ const parseTests = [
 	parseTest(`use traits * from {};`,	null,	/\`use traits\` requires an expression./	),
 	parseTest(`use traits * from ({});`,			),
 	parseTest(`use traits * from ({}); a.*b`,			),
-	parseTest(`a.*[b]`,			),
 	parseTest(`use traits * from ({}); 3.*b`,			),
 	parseTest(`use traits * from ({}); -3.*b`,			),
 	parseTest(`use traits * from ({}); 3e3.*b`,			),

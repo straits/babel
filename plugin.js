@@ -328,12 +328,6 @@ module.exports = function( arg ) {
 					assert( traitParent.object === straitsOperatorPath.node );
 				}
 
-				// fixing the cases where the original code was not `(...).*${symbol}`, but `.*[x.y]`
-				if( traitPath.node.computed ) {
-					straitsOperatorPath.replaceWith( straitsOperatorPath.node.object );
-					return;
-				}
-
 				debug.log( `.*${generate(traitPath.node.property).code}` );
 
 				const straitsExpression = new StraitsExpression(

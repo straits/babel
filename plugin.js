@@ -7,18 +7,16 @@ const template = require('@babel/template').default;
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');
 
-const DEBUG = false;
-const debug = DEBUG ?
-	{
-		group() { return console.group( ...arguments ); },
-		log() { return console.error( ...arguments ); },
-		groupEnd() { return console.groupEnd( ...arguments ); },
-	} :
-	{
-		group(){},
-		log(){},
-		groupEnd(){},
-	};
+const debug = {
+/*
+	group() { return console.group( ...arguments ); },
+	log() { return console.error( ...arguments ); },
+	groupEnd() { return console.groupEnd( ...arguments ); },
+*/
+	group(){},
+	log(){},
+	groupEnd(){},
+};
 
 // turning `_Straits` within strings into `.*`
 // NOTE: if a string had `_Straits` originally, that'd be screwed up, escape those, maybe?
@@ -142,6 +140,9 @@ module.exports = function( arg ) {
 					debug.groupEnd();
 					debug.log(`----- END  PROGRAM-----`);
 
+					// TODO: explain why we're doing this here, rather than in `post`.
+					// IIRC, the Visitor keep running after `exit` on the new nodes we create...
+					// But so? Maybe babel6 was different?
 					const {straits} = this;
 					delete this.straits;
 

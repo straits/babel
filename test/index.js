@@ -134,4 +134,13 @@ describe(`straits-babel/plugin`, function(){
 	it(`Trait of a trait`, function(){
 		expect( ()=>evalFile(`./test/data/trait_of_trait.js`) ).not.to.throw();
 	});
+
+	it(`Strings aren't changed`, function(){
+		// NOTE, TODO: some spaces from the original string might go lost...
+		expect( ()=>evalFile(`./test/data/strings_not_changed.js`) ).not.to.throw();
+	});
+
+	it(`Labels work normally`, function(){
+		expect( ()=>evalFile(`./test/data/label.js`) ).not.to.throw();
+	});
 });

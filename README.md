@@ -1,5 +1,5 @@
 
-# Straits Babel ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel.svg?style=popout) ![David](https://img.shields.io/david/peoro/straits-babel.svg?style=popout)  ![Travis (.com)](https://img.shields.io/travis/com/peoro/straits-babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/peoro/straits-babel.svg?style=popout)
+# @straits/babel ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel.svg?style=popout) ![David](https://img.shields.io/david/peoro/straits-babel.svg?style=popout)  ![Travis (.com)](https://img.shields.io/travis/com/peoro/straits-babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/peoro/straits-babel.svg?style=popout)
 
 > A babel7 parser and plugin implementing the [straits](https://github.com/peoro/straits/) syntax.
 
@@ -31,8 +31,8 @@ module.exports = function( api ) {
 	api.cache.forever();
 	return {
 		"plugins": [
-			{ parserOverride:require('straits-babel').parse },
-			"straits-babel/plugin.js",
+			{ parserOverride:require('@straits/babel').parse },
+			"@straits/babel/plugin.js",
 		]
 	};
 };

@@ -70,7 +70,7 @@ const parseTests = [
 	parseTest(`use traits * from ({}); NaN.*b`			),
 ];
 
-describe(`straits-babel`, function(){
+describe(`@straits/babel`, function(){
 	it(`Parses correctly`, function(){
 		parseTests.forEach( ({code, thrownByParse})=>{
 			if( thrownByParse ) {
@@ -82,7 +82,7 @@ describe(`straits-babel`, function(){
 	});
 });
 
-describe(`straits-babel/plugin`, function(){
+describe(`@straits/babel/plugin`, function(){
 	it(`Transpiles correctly`, function(){
 		parseTests.forEach( ({code, thrownByTransform})=>{
 			if( thrownByTransform ) {

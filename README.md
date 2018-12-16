@@ -1,5 +1,5 @@
 
-# Straits Babel
+# Straits Babel ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel.svg?style=popout) ![David](https://img.shields.io/david/peoro/straits-babel.svg?style=popout)  ![Travis (.com)](https://img.shields.io/travis/com/peoro/straits-babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/peoro/straits-babel.svg?style=popout)
 
 > A babel7 parser and plugin implementing the [straits](https://github.com/peoro/straits/) syntax.
 
@@ -8,17 +8,23 @@
  - [Straits syntax](#straits-syntax)
  - [Examples](#examples)
 
-Note: the babel6 version is available on the babel6 branch (straits-babel@^1.x.x).
+Note: the babel6 version is available on the [babel6 branch](https://github.com/peoro/straits-babel/tree/babel6) or as [straits-babel@babel6 on npm](https://www.npmjs.com/package/straits-babel/v/babel6).
 
 ## Installation
 
 ```bash
-npm install --save-dev straits-babel
+npm install --save-dev @straits/babel
 ```
 
 ## Usage
 
-Write the following to `babel.config.js` in your project folder (or see other [babel's config options](https://babeljs.io/docs/en/config-files#project-wide-configuration)):
+The easiest way to get started, is by initializing a new project using `npm init @straits`.
+
+That will lead you through the creation of a new node project, with all the dev dependencies already in `package.json` and optionally setting up mocha and ESLint to use the straits syntax.
+You're left to run `npm install` to actually install the dev dependencies, and `npm start` to run a simple Hello World.
+`npm run prepare` (automatically executed both by `npm install` and `npm publish`) will transpile the straits syntax source code into regular JavaScript in the `dist/` directory.
+
+In case you prefer to manually add support to the straits-syntax, write the following to `babel.config.js` in your project folder (or see other [babel's config options](https://babeljs.io/docs/en/config-files#project-wide-configuration)):
 
 ```javascript
 module.exports = function( api ) {
@@ -33,6 +39,8 @@ module.exports = function( api ) {
 ```
 
 Then use [`babel`](https://babeljs.io/docs/en/index.html), `babel-node` or equivalent to transpile the straits syntax into valid JavaScript.
+
+Creating at least a temporary project with `npm init @straits` could be a good idea to see a full working project in action.
 
 ## Straits syntax
 

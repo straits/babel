@@ -38,7 +38,7 @@ function TEST_TRAIT_SET( traitSet ) {
 	`);
 
 	// getSymbol( targetSymName, ...traits )
-	// looks for `targetSymName` inside `traits`, and returns the trait, if found
+	// looks for `targetSymName` inside `traits`, and returns the symbol, if found
 	const getSymbolBuilder = template(`
 function GET_SYMBOL( targetSymName, ...traitSets ) {
 	let symbol;
@@ -116,19 +116,38 @@ class StraitsScope {
 	}
 }
 
+class Straits {
+	constructor() {
+		this.useTraitStatements = [];
+		this.straitsExpressions = [];
+		this.straitsAssignments = [];
+
+		this.scopeStack = [];
+		this.currentScope = new StraitsScope();
+	}
+
+	empty() {
+		return this.useTraitStatements.length === 0 &&
+			this.straitsExpressions.length === 0 &&
+			this.straitsAssignments.length === 0 &&
+			this.scopeStack.length === 0;
+	}
+}
+
 module.exports = function( arg ) {
 	return {
 		pre() {
 			assert( ! this.straits );
 
-			this.straits = {
-				useTraitStatements: [],
-				straitsExpressions: [],
-				straitsAssignments: [],
+			this.straits = new Straits();
+		},
+		post() {
+			// all the straits-related data should have been handled and consumed by `Program.exit`
+			assert( this.straits );
+			assert( this.straits.empty() );
 
-				scopeStack: [],
-				currentScope: new StraitsScope(),
-			};
+			// deleting `this.straits`: nothing should try to access it after `post`
+			delete this.straits;
 		},
 		visitor: {
 			Program: {
@@ -137,14 +156,19 @@ module.exports = function( arg ) {
 					debug.group();
 				},
 				exit( path ) {
+					// NOTE: the visitor will keep running after `visitor.Program.exit()` is called:
+					// it'll run on newly generated code (i.e. the code we're inserting here).
+					// we do not expect that code to modify `this.straits`;
+					// otherwise we'd have to handle the newly generated code as well...
+
+					// To make sure, we're re-initializing `this.straits` and then checking in the `post`
+					// function that `this.straits` has indeed not been used.
+
 					debug.groupEnd();
 					debug.log(`----- END  PROGRAM-----`);
 
-					// TODO: explain why we're doing this here, rather than in `post`.
-					// IIRC, the Visitor keep running after `exit` on the new nodes we create...
-					// But so? Maybe babel6 was different?
 					const {straits} = this;
-					delete this.straits;
+					this.straits = new Straits();
 
 					assert( straits.scopeStack.length === 0 );
 
@@ -246,7 +270,6 @@ module.exports = function( arg ) {
 
 			BlockStatement: {
 				enter( path ) {
-					if( ! this.straits ) { return; }
 					const {straits} = this;
 					straits.scopeStack.push( straits.currentScope );
 
@@ -254,7 +277,6 @@ module.exports = function( arg ) {
 					debug.group();
 				},
 				exit( path ) {
-					if( ! this.straits ) { return; }
 					const {straits} = this;
 					straits.currentScope = straits.scopeStack.pop();
 
@@ -265,7 +287,6 @@ module.exports = function( arg ) {
 
 			// `use straits * from EXPR`
 			LabeledStatement( path ) {
-				if( ! this.straits ) { return; }
 				const {straits} = this;
 
 				const node = path.node;
@@ -292,7 +313,6 @@ module.exports = function( arg ) {
 
 			// a.*b
 			Identifier( path ) {
-				if( ! this.straits ) { return; }
 				const {straits} = this;
 
 				const node = path.node;

@@ -1,4 +1,6 @@
 
+'use strict';
+
 const assert = require('assert');
 const fs = require('fs');
 const babel = require('@babel/core');
@@ -25,9 +27,6 @@ function transform( code ) {
 	}).code;
 }
 
-function transformFile( path ) {
-	return transform( fs.readFileSync(path, `utf8`) );
-}
 function evalFile( path ) {
 	const code = transform( fs.readFileSync(path, `utf8`) );
 	// console.log( code );
@@ -54,12 +53,12 @@ const parseTests = [
 	parseTest(`a.*()`,	/Unexpected token/,		),
 	parseTest(`a.*(b)`,	/Unexpected token/,		),
 	parseTest(`.*b`,	/Unexpected token/,		),
-	parseTest(`a.*b`,	null,	/\.\* used outside a \`use traits\` scope\./	),
+	parseTest(`a.*b`,	null,	/\.\* used outside a `use traits` scope\./	),
 	parseTest(`use traits from ({});`,	/Unexpected token/,		),
 	parseTest(`use traits *;`,	/Unexpected token/,		),
-	parseTest(`use traits * from;`,	null,	/\`use traits\` requires an expression./	),
+	parseTest(`use traits * from;`,	null,	/`use traits` requires an expression./	),
 	parseTest(`use something * from ({});`,	/Unexpected token/,		),
-	parseTest(`use traits * from {};`,	null,	/\`use traits\` requires an expression./	),
+	parseTest(`use traits * from {};`,	null,	/`use traits` requires an expression./	),
 	parseTest(`use traits * from ({});`,			),
 	parseTest(`use traits * from ({}); a.*b`,			),
 	parseTest(`use traits * from ({}); 3.*b`,			),
@@ -100,7 +99,7 @@ describe(`straits-babel/plugin`, function(){
 		expect( evalFile(`./test/data/3.js`) ).to.equal( 3 );
 		expect( ()=>evalFile(`./test/data/undefined_traits.js`) ).to.throw(/null cannot be used as a trait set./);
 		expect( ()=>evalFile(`./test/data/conflict.js`) ).to.throw(/Symbol x offered by multiple trait sets./);
-		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used outside a \`use traits\` scope\./);
+		expect( ()=>evalFile(`./test/data/missing.js`) ).to.throw(/\.\* used outside a `use traits` scope\./);
 		expect( ()=>evalFile(`./test/data/missing_symbol.js`) ).to.throw(/No trait set is providing symbol x/);
 	});
 

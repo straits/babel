@@ -73,7 +73,7 @@ function IMPL_SYMBOL( target, sym, value ) {
 		testTraitSet: path.scope.generateUidIdentifier(`testTraitSet`),
 		getSymbol: path.scope.generateUidIdentifier(`getSymbol`),
 		implSymbol: path.scope.generateUidIdentifier(`implSymbol`),
-	}
+	};
 
 	// adding to the AST the code for the above functions
 	path.unshiftContainer('body', testTraitBuilder({ TEST_TRAIT_SET:identifiers.testTraitSet }) );
@@ -130,13 +130,11 @@ module.exports = function( arg ) {
 
 				scopeStack: [],
 				currentScope: new StraitsScope(),
-			}
+			};
 		},
 		visitor: {
 			Program: {
 				enter( path ) {
-					const {straits} = this;
-
 					debug.log(`-----START PROGRAM-----`);
 					debug.group();
 				},
@@ -174,12 +172,12 @@ module.exports = function( arg ) {
 
 					// for each `.*` usage, let's resolve the symbol and replace the expression
 					{
-						function resolveSymbol( se ) {
+						const resolveSymbol = (se)=>{
 							const {scope, symbolName} = se;
 							const {symbols} = scope;
 
 							if( symbols.has(symbolName) ) {
-								return symbols.get( symbolName );;
+								return symbols.get( symbolName );
 							}
 
 							// if the symbol was not used before, let's resolve it...
@@ -206,7 +204,7 @@ module.exports = function( arg ) {
 							);
 
 							return symbolIdentifier;
-						}
+						};
 
 						straits.straitsExpressions.forEach( (se)=>{
 							const symbolIdentifier = resolveSymbol( se );
@@ -232,7 +230,7 @@ module.exports = function( arg ) {
 										se.assignmentValue,
 									]
 								)
-							)
+							);
 						});
 					}
 
@@ -275,7 +273,7 @@ module.exports = function( arg ) {
 				}
 
 				assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
-				assert( path.node.body.type === 'ExpressionStatement', `\`use traits\` requires an expression.` )
+				assert( path.node.body.type === 'ExpressionStatement', `\`use traits\` requires an expression.` );
 
 				debug.log( `use traits * from ${generate(path.node.body.expression).code};` );
 

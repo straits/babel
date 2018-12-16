@@ -1,24 +1,41 @@
 {
-	"name": "straits-babel",
-	"version": "2.0.0",
-	"description": "Babel straits syntax plugin (babel7)",
+	"name": "@straits/babel",
+	"version": "1.0.0",
+	"description": "Babel straits syntax plugin",
 	"main": "index.js",
 	"scripts": {
-		"test": "mocha test/index.js"
-	},
-	"author": "peoro",
-	"homepage": "https://straits.paologiangrandi.it",
-	"license": "ISC",
-	"devDependencies": {
-		"@babel/cli": "^7.1.5",
-		"@babel/core": "^7.1.6",
-		"chai": "^4.2.0",
-		"mocha": "^5.2.0"
+		"pretest": "eslint *.js test",
+		"test": "nyc mocha test/index.js",
+		"coverage": "nyc report --reporter=lcov"
 	},
 	"dependencies": {
 		"@babel/generator": "^7.1.6",
 		"@babel/parser": "^7.1.6",
 		"@babel/template": "^7.1.2",
 		"@babel/types": "^7.1.6"
-	}
+	},
+	"devDependencies": {
+		"@babel/cli": "^7.1.5",
+		"@babel/core": "^7.1.6",
+		"@peoro/eslint-config": "^1.0.1",
+		"@straits/eslint-config": "^1.0.1",
+		"chai": "^4.2.0",
+		"eslint": "^5.10.0",
+		"mocha": "^5.2.0",
+		"nyc": "^13.1.0"
+	},
+	"author": "peoro",
+	"license": "MIT",
+	"keywords": [
+		"straits",
+		"straits-syntax",
+		"traits",
+		"syntax",
+		"babel",
+		"babel-plugin",
+		"babel-parser"
+	],
+	"homepage": "https://github.com/peoro/straits-babel#readme",
+	"bugs": "https://github.com/peoro/straits-babel/issues",
+	"repository": "github:peoro/straits-babel"
 }

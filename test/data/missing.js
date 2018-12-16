@@ -1,4 +1,5 @@
 
+/* eslint no-unused-vars: ["error", { "varsIgnorePattern": "^symbols$" }] */
 const symbols = {
 	x: Symbol(`x`)
 };

@@ -1,3 +1,12 @@
 
+# our temporary directiories
+/build/
+/dist/
+
 # npm
-node_modules/
+/node_modules/
+
+# test & coverage files
+/coverage/
+.nyc_output
+*.lcov

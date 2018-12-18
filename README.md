@@ -1,14 +1,14 @@
 
-# @straits/babel ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel.svg?style=popout) ![David](https://img.shields.io/david/peoro/straits-babel.svg?style=popout)  ![Travis (.com)](https://img.shields.io/travis/com/peoro/straits-babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/peoro/straits-babel.svg?style=popout)
+# @straits/babel ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel.svg?style=popout) ![David](https://img.shields.io/david/straits/babel.svg?style=popout)  ![Travis (.com)](https://img.shields.io/travis/com/straits/babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/straits/babel.svg?style=popout)
 
-> A babel7 parser and plugin implementing the [straits](https://github.com/peoro/straits/) syntax.
+> A babel7 parser and plugin implementing the [straits](https://straits.github.io/) syntax.
 
  - [Installation](#installation)
  - [Usage](#usage)
  - [Straits syntax](#straits-syntax)
  - [Examples](#examples)
 
-Note: the babel6 version is available on the [babel6 branch](https://github.com/peoro/straits-babel/tree/babel6) or as [straits-babel@babel6 on npm](https://www.npmjs.com/package/straits-babel/v/babel6).
+Note: the babel6 version is available on the [babel6 branch](https://github.com/straits/babel/tree/babel6) or as [straits-babel@babel6 on npm](https://www.npmjs.com/package/straits-babel/v/babel6).
 
 ## Installation
 
@@ -44,7 +44,7 @@ Creating at least a temporary project with `npm init @straits` could be a good i
 
 ## Straits syntax
 
-The [straits](https://github.com/peoro/straits/) syntax transpiles the `use straits` statement and `.*` expression.
+The [straits syntax](https://straits.github.io/syntax/) transpiles the `use straits` statement and `.*` expression.
 These ease the usage of traits, implemented as `symbol` properties (see the [Iteration protocols](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols) for an example of `symbol` properties implemented as traits in the ECMAScript standard).
 
 The straits syntax offers several advantages over its alternatives:

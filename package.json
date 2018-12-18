@@ -35,7 +35,7 @@
 		"babel-plugin",
 		"babel-parser"
 	],
-	"homepage": "https://github.com/peoro/straits-babel#readme",
-	"bugs": "https://github.com/peoro/straits-babel/issues",
-	"repository": "github:peoro/straits-babel"
+	"homepage": "https://github.com/straits/babel#readme",
+	"bugs": "https://github.com/straits/babel/issues",
+	"repository": "github:straits/babel"
 }

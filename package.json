@@ -8,15 +8,13 @@
 		"test": "nyc mocha test/index.js",
 		"coverage": "nyc report --reporter=lcov"
 	},
-	"dependencies": {
-		"@babel/generator": "^7.1.6",
-		"@babel/parser": "^7.1.6",
-		"@babel/template": "^7.1.2",
-		"@babel/types": "^7.1.6"
+	"dependencies": {},
+	"peerDependencies": {
+		"@babel/core": "^7.0.0"
 	},
 	"devDependencies": {
-		"@babel/cli": "^7.1.5",
-		"@babel/core": "^7.1.6",
+		"@babel/cli": "^7.2.0",
+		"@babel/core": "^7.2.2",
 		"@peoro/eslint-config": "^1.0.1",
 		"@straits/eslint-config": "^1.0.1",
 		"chai": "^4.2.0",

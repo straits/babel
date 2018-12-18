@@ -2,21 +2,7 @@
 'use strict';
 
 const assert = require('assert');
-
-const template = require('@babel/template').default;
-const generate = require('@babel/generator').default;
-const t = require('@babel/types');
-
-const debug = {
-/*
-	group() { return console.group( ...arguments ); },
-	log() { return console.error( ...arguments ); },
-	groupEnd() { return console.groupEnd( ...arguments ); },
-*/
-	group(){},
-	log(){},
-	groupEnd(){},
-};
+//const generate = require('@babel/generator').default;
 
 // turning `_Straits` within strings into `.*`
 // NOTE: if a string had `_Straits` originally, that'd be screwed up, escape those, maybe?
@@ -26,7 +12,8 @@ function cleanString( str ) {
 		.replace(/_StraitsProvider:/g,  `use traits * from` );
 }
 
-function generateStraitsFunctions( path ) {
+// prepend to `path` the functions we need to use traits
+function generateStraitsFunctions( {template}, path ) {
 	// testTraitSet( traitSet )
 	// it makes sure that all the `use traits * from` statements have a valid object as expression
 	const testTraitBuilder = template(`
@@ -134,7 +121,9 @@ class Straits {
 	}
 }
 
-module.exports = function( arg ) {
+module.exports = function( args ) {
+	const t = args.types;
+
 	return {
 		pre() {
 			assert( ! this.straits );
@@ -152,8 +141,8 @@ module.exports = function( arg ) {
 		visitor: {
 			Program: {
 				enter( path ) {
-					debug.log(`-----START PROGRAM-----`);
-					debug.group();
+					//console.error(`-----START PROGRAM-----`);
+					//console.group();
 				},
 				exit( path ) {
 					// NOTE: the visitor will keep running after `visitor.Program.exit()` is called:
@@ -164,8 +153,8 @@ module.exports = function( arg ) {
 					// To make sure, we're re-initializing `this.straits` and then checking in the `post`
 					// function that `this.straits` has indeed not been used.
 
-					debug.groupEnd();
-					debug.log(`----- END  PROGRAM-----`);
+					//console.groupEnd();
+					//console.error(`----- END  PROGRAM-----`);
 
 					const {straits} = this;
 					this.straits = new Straits();
@@ -179,7 +168,7 @@ module.exports = function( arg ) {
 					}
 
 					// generating global functions
-					const traitFns = generateStraitsFunctions( path );
+					const traitFns = generateStraitsFunctions( args, path );
 
 					// writing a `testTraitSet` call where each `use trait` statement is
 					straits.useTraitStatements.forEach( (uts)=>{
@@ -273,15 +262,15 @@ module.exports = function( arg ) {
 					const {straits} = this;
 					straits.scopeStack.push( straits.currentScope );
 
-					debug.log(`{`);
-					debug.group();
+					//console.error(`{`);
+					//console.group();
 				},
 				exit( path ) {
 					const {straits} = this;
 					straits.currentScope = straits.scopeStack.pop();
 
-					debug.groupEnd();
-					debug.log(`}`);
+					//console.groupEnd();
+					//console.error(`}`);
 				}
 			},
 
@@ -297,7 +286,7 @@ module.exports = function( arg ) {
 				assert( path.parent.type === 'BlockStatement' || path.parent.type === 'Program', `"use traits * from" must be placed in a block, or in the outermost scope.` );
 				assert( path.node.body.type === 'ExpressionStatement', `\`use traits\` requires an expression.` );
 
-				debug.log( `use traits * from ${generate(path.node.body.expression).code};` );
+				//console.error( `use traits * from ${generate(path.node.body.expression).code};` );
 
 				const useTraitStatement = new UseTraitStatement(
 					path,
@@ -347,7 +336,7 @@ module.exports = function( arg ) {
 					assert( traitParent.object === straitsOperatorPath.node );
 				}
 
-				debug.log( `.*${generate(traitPath.node.property).code}` );
+				//console.error( `.*${generate(traitPath.node.property).code}` );
 
 				const straitsExpression = new StraitsExpression(
 					traitPath,

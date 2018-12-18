@@ -143,4 +143,8 @@ describe(`@straits/babel/plugin`, function(){
 	it(`Labels work normally`, function(){
 		expect( ()=>evalFile(`./test/data/label.js`) ).not.to.throw();
 	});
+
+	it(`Traits are block scoped`, function(){
+		expect( evalFile(`./test/data/block_scope.js`) ).to.equal( 7 );
+	});
 });

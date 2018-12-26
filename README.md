@@ -1,19 +1,18 @@
-
-# @straits/babel ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel.svg?style=popout) ![David](https://img.shields.io/david/straits/babel.svg?style=popout)  ![Travis (.com)](https://img.shields.io/travis/com/straits/babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/straits/babel.svg?style=popout)
+# @straits/babel-plugin ![npm (scoped)](https://img.shields.io/npm/v/@straits/babel-plugin.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/@straits/babel-plugin.svg?style=popout) ![David](https://img.shields.io/david/straits/babel.svg?style=popout) ![Travis (.com)](https://img.shields.io/travis/com/straits/babel.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/straits/babel.svg?style=popout)
 
 > A babel7 parser and plugin implementing the [straits](https://straits.github.io/) syntax.
 
- - [Installation](#installation)
- - [Usage](#usage)
- - [Straits syntax](#straits-syntax)
- - [Examples](#examples)
+-   [Installation](#installation)
+-   [Usage](#usage)
+-   [Straits syntax](#straits-syntax)
+-   [Examples](#examples)
 
-Note: the babel6 version is available on the [babel6 branch](https://github.com/straits/babel/tree/babel6) or as [straits-babel@babel6 on npm](https://www.npmjs.com/package/straits-babel/v/babel6).
+Note: the babel6 version is available on the [babel6 branch](https://github.com/straits/babel-plugin/tree/babel6) or as [`straits-babel@babel6` on npm](https://www.npmjs.com/package/straits-babel/v/babel6).
 
 ## Installation
 
 ```bash
-npm install --save-dev @straits/babel
+npm install --save-dev @straits/babel-plugin
 ```
 
 ## Usage
@@ -24,23 +23,12 @@ That will lead you through the creation of a new node project, with all the dev 
 You're left to run `npm install` to actually install the dev dependencies, and `npm start` to run a simple Hello World.
 `npm run prepare` (automatically executed both by `npm install` and `npm publish`) will transpile the straits syntax source code into regular JavaScript in the `dist/` directory.
 
-In case you prefer to manually add support to the straits-syntax, write the following to `babel.config.js` in your project folder (or see other [babel's config options](https://babeljs.io/docs/en/config-files#project-wide-configuration)):
+If you want to manually configure babel to use the straits syntax, just use `@straits` as a babel plugin.
+For instance, after installing `@babel/cli`:
 
-```javascript
-module.exports = function( api ) {
-	api.cache.forever();
-	return {
-		"plugins": [
-			{ parserOverride:require('@straits/babel').parse },
-			"@straits/babel/plugin.js",
-		]
-	};
-};
+```bash
+npx babel --plugins='@straits' your_straits_file.js
 ```
-
-Then use [`babel`](https://babeljs.io/docs/en/index.html), `babel-node` or equivalent to transpile the straits syntax into valid JavaScript.
-
-Creating at least a temporary project with `npm init @straits` could be a good idea to see a full working project in action.
 
 ## Straits syntax
 
@@ -49,13 +37,14 @@ These ease the usage of traits, implemented as `symbol` properties (see the [Ite
 
 The straits syntax offers several advantages over its alternatives:
 
- - it makes the code easier to write, read and understand,
- - it makes sure that the traits you access are offered by exactly one trait set you're using,
- - it doesn't pollute nor conflict with the normal scope variables.
+-   it makes the code easier to write, read and understand,
+-   it makes sure that the traits you access are offered by exactly one trait set you're using,
+-   it doesn't pollute nor conflict with the normal scope variables.
 
 ## Examples
 
 Let's see a minimal example:
+
 ```javascript
 use traits * from Symbol;
 [].*iterator();
@@ -64,6 +53,7 @@ use traits * from Symbol;
 ```
 
 Let's look at a more complete one:
+
 ```javascript
 const {TraitSet} = require('straits').utils;
 const traitSet1 = new TraitSet('duplicatedTrait', 'trait1');

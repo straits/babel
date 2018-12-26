@@ -5,7 +5,7 @@ const assert = require('assert');
 const fs = require('fs');
 const babel = require('@babel/core');
 const chai = require('chai');
-const straitsParser = require('../index.js');
+const babelStraits = require('../index.js');
 
 const {expect} = chai;
 
@@ -13,7 +13,7 @@ const {expect} = chai;
 function parse( code ) {
 	return babel.transform( code, {
 		"plugins": [
-			{ parserOverride:straitsParser.parse }
+			{ parserOverride:babelStraits({}).parserOverride },
 		]
 	}).code;
 }
@@ -21,8 +21,7 @@ function parse( code ) {
 function transform( code ) {
 	return babel.transform( code, {
 		"plugins": [
-			{ parserOverride:straitsParser.parse },
-			"./plugin.js",
+			"./index.js",
 		]
 	}).code;
 }
@@ -70,7 +69,7 @@ const parseTests = [
 	parseTest(`use traits * from ({}); NaN.*b`			),
 ];
 
-describe(`@straits/babel`, function(){
+describe(`@straits/babel-plugin`, function(){
 	it(`Parses correctly`, function(){
 		parseTests.forEach( ({code, thrownByParse})=>{
 			if( thrownByParse ) {
@@ -80,9 +79,7 @@ describe(`@straits/babel`, function(){
 			}
 		});
 	});
-});
 
-describe(`@straits/babel/plugin`, function(){
 	it(`Transpiles correctly`, function(){
 		parseTests.forEach( ({code, thrownByTransform})=>{
 			if( thrownByTransform ) {

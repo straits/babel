@@ -1,5 +1,5 @@
 {
-	"name": "@straits/babel",
+	"name": "@straits/babel-plugin",
 	"version": "1.0.0",
 	"description": "Babel straits syntax plugin",
 	"main": "index.js",
@@ -13,12 +13,12 @@
 		"@babel/core": "^7.0.0"
 	},
 	"devDependencies": {
-		"@babel/cli": "^7.2.0",
+		"@babel/cli": "^7.2.3",
 		"@babel/core": "^7.2.2",
 		"@peoro/eslint-config": "^1.0.1",
 		"@straits/eslint-config": "^1.0.1",
 		"chai": "^4.2.0",
-		"eslint": "^5.10.0",
+		"eslint": "^5.11.0",
 		"mocha": "^5.2.0",
 		"nyc": "^13.1.0"
 	},
